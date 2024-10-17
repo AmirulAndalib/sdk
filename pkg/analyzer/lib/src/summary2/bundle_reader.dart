@@ -1759,7 +1759,8 @@ class LibraryReader {
   ) {
     var resolutionOffset = _baseResolutionOffset + _reader.readUInt30();
     var reference = _readReference();
-    var name = reference.elementName;
+    var fragmentName = _readFragmentName();
+    var name = _reader.readStringReference();
 
     var isFunctionTypeAliasBased = _reader.readBool();
 
@@ -1770,6 +1771,7 @@ class LibraryReader {
     } else {
       element = TypeAliasElementImpl(name, -1);
     }
+    element.name2 = fragmentName;
 
     var linkedData = TypeAliasElementLinkedData(
       reference: reference,
@@ -1799,9 +1801,11 @@ class LibraryReader {
   List<TypeParameterElementImpl> _readTypeParameters() {
     return _reader.readTypedList(() {
       var name = _reader.readStringReference();
+      var fragmentName = _readFragmentName();
       var varianceEncoding = _reader.readByte();
       var variance = _decodeVariance(varianceEncoding);
       var element = TypeParameterElementImpl(name, -1);
+      element.name2 = fragmentName;
       element.variance = variance;
       return element;
     });
