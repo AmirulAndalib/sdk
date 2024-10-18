@@ -1270,10 +1270,8 @@ class LibraryReader {
     required LibraryOrAugmentationElementImpl containerLibrary,
     required CompilationUnitElementImpl containerUnit,
   }) {
-    PrefixElementImpl buildElement(String name) {
+    PrefixElementImpl buildElement(String name, Reference reference) {
       // TODO(scheglov): Make reference required.
-      var containerRef = containerUnit.reference!;
-      var reference = containerRef.getChild('@prefix').getChild(name);
       var existing = reference.element;
       if (existing is PrefixElementImpl) {
         return existing;
@@ -1290,13 +1288,15 @@ class LibraryReader {
     switch (kind) {
       case ImportElementPrefixKind.isDeferred:
         var name = _reader.readStringReference();
+        var reference = _readReference();
         return DeferredImportElementPrefixImpl(
-          element: buildElement(name),
+          element: buildElement(name, reference),
         );
       case ImportElementPrefixKind.isNotDeferred:
         var name = _reader.readStringReference();
+        var reference = _readReference();
         return ImportElementPrefixImpl(
-          element: buildElement(name),
+          element: buildElement(name, reference),
         );
       case ImportElementPrefixKind.isNull:
         return null;
@@ -1322,20 +1322,16 @@ class LibraryReader {
     required CompilationUnitElementImpl libraryFragment,
   }) {
     return _reader.readOptionalObject((reader) {
-      var name = _reader.readStringReference();
+      var fragmentName = _readFragmentName();
+      var reference = _readReference();
       var isDeferred = _reader.readBool();
       var fragment = PrefixFragmentImpl(
         enclosingFragment: libraryFragment,
-        name: name,
-        nameOffset: -1,
-        name2: FragmentNameImpl(name: name, nameOffset: -1),
+        name2: fragmentName,
         isDeferred: isDeferred,
       );
 
-      var containerRef = libraryFragment.reference!;
-      var reference = containerRef.getChild('@prefix2').getChild(name);
       var element = reference.element2 as PrefixElementImpl2?;
-
       if (element == null) {
         element = PrefixElementImpl2(
           reference: reference,
@@ -1373,7 +1369,8 @@ class LibraryReader {
       var resolutionOffset = _baseResolutionOffset + _reader.readUInt30();
       var reference = _readReference();
       var fragmentName = _readFragmentName();
-      var name = reference.elementName;
+      // TODO(scheglov): we do this only because MethodElement2 uses this name.
+      var name = _reader.readStringReference();
       var element = MethodElementImpl(name, -1);
       element.name2 = fragmentName;
       var linkedData = MethodElementLinkedData(
@@ -1759,7 +1756,8 @@ class LibraryReader {
   ) {
     var resolutionOffset = _baseResolutionOffset + _reader.readUInt30();
     var reference = _readReference();
-    var name = reference.elementName;
+    var fragmentName = _readFragmentName();
+    var name = _reader.readStringReference();
 
     var isFunctionTypeAliasBased = _reader.readBool();
 
@@ -1770,6 +1768,7 @@ class LibraryReader {
     } else {
       element = TypeAliasElementImpl(name, -1);
     }
+    element.name2 = fragmentName;
 
     var linkedData = TypeAliasElementLinkedData(
       reference: reference,
@@ -1799,9 +1798,11 @@ class LibraryReader {
   List<TypeParameterElementImpl> _readTypeParameters() {
     return _reader.readTypedList(() {
       var name = _reader.readStringReference();
+      var fragmentName = _readFragmentName();
       var varianceEncoding = _reader.readByte();
       var variance = _decodeVariance(varianceEncoding);
       var element = TypeParameterElementImpl(name, -1);
+      element.name2 = fragmentName;
       element.variance = variance;
       return element;
     });

@@ -7,10 +7,8 @@ import 'package:analyzer/error/listener.dart';
 import 'package:analyzer/source/error_processor.dart';
 import 'package:analyzer/source/source.dart';
 import 'package:analyzer/src/analysis_options/analysis_options_provider.dart';
-import 'package:analyzer/src/analysis_options/apply_options.dart';
 import 'package:analyzer/src/analysis_options/error/option_codes.dart';
 import 'package:analyzer/src/dart/analysis/experiments.dart';
-import 'package:analyzer/src/generated/engine.dart';
 import 'package:analyzer/src/generated/source.dart' show SourceFactory;
 import 'package:analyzer/src/generated/utilities_general.dart';
 import 'package:analyzer/src/lint/options_rule_validator.dart';
@@ -192,12 +190,6 @@ List<AnalysisError> analyzeAnalysisOptions(
   return errors;
 }
 
-@Deprecated("Use 'applyOptions' made available in "
-    "'package:analyzer/src/analysis_options/apply_options.dart'")
-void applyToAnalysisOptions(AnalysisOptionsImpl options, YamlMap optionMap) {
-  options.applyOptions(optionMap);
-}
-
 /// Returns the name of the first plugin, if one is specified in [options],
 /// otherwise `null`.
 String? _firstPluginName(YamlMap options) {
@@ -274,6 +266,9 @@ class AnalyzerOptions {
   // Formatter options.
   static const String pageWidth = 'page_width';
 
+  // Linter options.
+  static const String rules = 'rules';
+
   static const String propagateLinterExceptions = 'propagate-linter-exceptions';
 
   /// Ways to say `true` or `false`.
@@ -303,6 +298,10 @@ class AnalyzerOptions {
     strictCasts,
     strictInference,
     strictRawTypes,
+  ];
+
+  static const List<String> linterOptions = [
+    rules,
   ];
 
   /// Supported 'analyzer' optional checks options.
@@ -757,7 +756,7 @@ class LanguageOptionValidator extends OptionsValidator {
 /// Validates `linter` top-level options.
 // TODO(pq): move into `linter` package and plugin.
 class LinterOptionsValidator extends TopLevelOptionValidator {
-  LinterOptionsValidator() : super('linter', const ['rules']);
+  LinterOptionsValidator() : super('linter', AnalyzerOptions.linterOptions);
 }
 
 /// Validates `analyzer` optional-checks value configuration options.

@@ -945,12 +945,16 @@ class _Element2Writer extends _AbstractElementWriter {
     if (fragment != null) {
       _sink.writeIf(fragment.isDeferred, ' deferred');
       _sink.write(' as ');
-      _sink.write(fragment.name);
-      _sink.write(' @${fragment.nameOffset}');
+      _writeFragmentName(fragment);
     }
   }
 
   void _writeInstanceElement(InstanceElement2 e) {
+    expect(e.thisOrAncestorOfType2<InstanceElement2>(), same(e));
+    expect(e.thisOrAncestorOfType2<GetterElement>(), isNull);
+    expect(e.thisOrAncestorMatching2((_) => true), same(e));
+    expect(e.thisOrAncestorMatching2((_) => false), isNull);
+
     _sink.writeIndentedLine(() {
       switch (e) {
         case ClassElement2():
@@ -1579,8 +1583,12 @@ class _Element2Writer extends _AbstractElementWriter {
         _sink.write('fragments: ');
         _sink.write(e.fragments.map((f) {
           expect(f.element, same(e));
-          expect(f.name2.name, e.name);
-          return '@${f.name2.nameOffset}';
+          if (f.name2 case var name?) {
+            expect(name.name, e.name);
+            return '@${name.nameOffset}';
+          } else {
+            return '<null-name>';
+          }
         }).join(' '));
       });
     });

@@ -618,6 +618,7 @@ class InformativeDataApplier {
     element as TypeAliasElementImpl;
     element.setCodeRange(info.codeOffset, info.codeLength);
     element.nameOffset = info.nameOffset;
+    _setFragmentNameOffset(element.name2, info.nameOffset2);
     element.documentationComment = info.documentationComment;
     _applyToTypeParameters(
       element.typeParameters_unresolved,
@@ -638,6 +639,7 @@ class InformativeDataApplier {
     element as TypeAliasElementImpl;
     element.setCodeRange(info.codeOffset, info.codeLength);
     element.nameOffset = info.nameOffset;
+    _setFragmentNameOffset(element.name2, info.nameOffset2);
     element.documentationComment = info.documentationComment;
     _applyToTypeParameters(
       element.typeParameters_unresolved,
@@ -671,8 +673,9 @@ class InformativeDataApplier {
         }
 
         if (element.prefix2 case var prefixFragment?) {
-          prefixFragment.nameOffset = info.prefixOffset;
-          prefixFragment.name2.nameOffset = info.prefixOffset;
+          if (prefixFragment.name2 case var name?) {
+            name.nameOffset = info.prefixOffset;
+          }
         }
         _applyToCombinators(element.combinators, info.combinators);
       },
@@ -814,6 +817,7 @@ class InformativeDataApplier {
         element as TypeParameterElementImpl;
         element.setCodeRange(info.codeOffset, info.codeLength);
         element.nameOffset = info.nameOffset;
+        _setFragmentNameOffset(element.name2, info.nameOffset2);
       },
     );
   }
@@ -1284,6 +1288,7 @@ class _InfoFunctionTypeAlias {
   final int codeOffset;
   final int codeLength;
   final int nameOffset;
+  final int? nameOffset2;
   final String? documentationComment;
   final List<_InfoTypeParameter> typeParameters;
   final List<_InfoFormalParameter> parameters;
@@ -1294,6 +1299,7 @@ class _InfoFunctionTypeAlias {
       codeOffset: reader.readUInt30(),
       codeLength: reader.readUInt30(),
       nameOffset: reader.readUInt30(),
+      nameOffset2: reader.readOptionalUInt30(),
       documentationComment: reader.readStringUtf8().nullIfEmpty,
       typeParameters: reader.readTypedList(
         () => _InfoTypeParameter(reader),
@@ -1309,6 +1315,7 @@ class _InfoFunctionTypeAlias {
     required this.codeOffset,
     required this.codeLength,
     required this.nameOffset,
+    required this.nameOffset2,
     required this.documentationComment,
     required this.typeParameters,
     required this.parameters,
@@ -1320,6 +1327,7 @@ class _InfoGenericTypeAlias {
   final int codeOffset;
   final int codeLength;
   final int nameOffset;
+  final int? nameOffset2;
   final String? documentationComment;
   final List<_InfoTypeParameter> typeParameters;
   final List<_InfoTypeParameter> aliasedTypeParameters;
@@ -1331,6 +1339,7 @@ class _InfoGenericTypeAlias {
       codeOffset: reader.readUInt30(),
       codeLength: reader.readUInt30(),
       nameOffset: reader.readUInt30(),
+      nameOffset2: reader.readOptionalUInt30(),
       documentationComment: reader.readStringUtf8().nullIfEmpty,
       typeParameters: reader.readTypedList(
         () => _InfoTypeParameter(reader),
@@ -1349,6 +1358,7 @@ class _InfoGenericTypeAlias {
     required this.codeOffset,
     required this.codeLength,
     required this.nameOffset,
+    required this.nameOffset2,
     required this.documentationComment,
     required this.typeParameters,
     required this.aliasedTypeParameters,
@@ -1360,12 +1370,14 @@ class _InfoGenericTypeAlias {
 class _InfoImport {
   final int nameOffset;
   final int prefixOffset;
+  final int? prefixOffset2;
   final List<_InfoCombinator> combinators;
 
   factory _InfoImport(SummaryDataReader reader) {
     return _InfoImport._(
       nameOffset: reader.readUInt30(),
       prefixOffset: reader.readUInt30() - 1,
+      prefixOffset2: reader.readOptionalUInt30(),
       combinators: reader.readTypedList(
         () => _InfoCombinator(reader),
       ),
@@ -1375,6 +1387,7 @@ class _InfoImport {
   _InfoImport._({
     required this.nameOffset,
     required this.prefixOffset,
+    required this.prefixOffset2,
     required this.combinators,
   });
 }
@@ -1468,6 +1481,7 @@ class _InformativeDataWriter {
     sink.writeList2<ImportDirective>(unit.directives, (directive) {
       sink.writeUInt30(directive.importKeyword.offset);
       sink.writeUInt30(1 + (directive.prefix?.offset ?? -1));
+      sink.writeOptionalUInt30(directive.prefix?.token.offsetIfNotEmpty);
       _writeCombinators(directive.combinators);
     });
 
@@ -1607,6 +1621,7 @@ class _InformativeDataWriter {
       sink.writeUInt30(node.offset);
       sink.writeUInt30(node.length);
       sink.writeUInt30(node.name.offset);
+      sink.writeOptionalUInt30(node.name.offsetIfNotEmpty);
       _writeDocumentationComment(node);
       _writeTypeParameters(node.typeParameters);
       _writeFormalParameters(node.parameters);
@@ -1622,6 +1637,7 @@ class _InformativeDataWriter {
       sink.writeUInt30(node.offset);
       sink.writeUInt30(node.length);
       sink.writeUInt30(node.name.offset);
+      sink.writeOptionalUInt30(node.name.offsetIfNotEmpty);
       _writeDocumentationComment(node);
       _writeTypeParameters(node.typeParameters);
       if (aliasedType is GenericFunctionType) {
@@ -1999,6 +2015,7 @@ class _InformativeDataWriter {
       sink.writeUInt30(node.offset);
       sink.writeUInt30(node.length);
       sink.writeUInt30(node.name.offset);
+      sink.writeOptionalUInt30(node.name.offsetIfNotEmpty);
     });
   }
 }
@@ -2036,12 +2053,14 @@ class _InfoTypeParameter {
   final int codeOffset;
   final int codeLength;
   final int nameOffset;
+  final int? nameOffset2;
 
   factory _InfoTypeParameter(SummaryDataReader reader) {
     return _InfoTypeParameter._(
       codeOffset: reader.readUInt30(),
       codeLength: reader.readUInt30(),
       nameOffset: reader.readUInt30(),
+      nameOffset2: reader.readOptionalUInt30(),
     );
   }
 
@@ -2049,6 +2068,7 @@ class _InfoTypeParameter {
     required this.codeOffset,
     required this.codeLength,
     required this.nameOffset,
+    required this.nameOffset2,
   });
 }
 

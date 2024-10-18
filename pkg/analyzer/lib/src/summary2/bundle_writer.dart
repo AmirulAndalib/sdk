@@ -474,13 +474,15 @@ class BundleWriter {
     LibraryImportElementFlags.write(_sink, element);
   }
 
-  void _writeImportElementPrefix(ImportElementPrefix? prefix) {
-    if (prefix is DeferredImportElementPrefix) {
+  void _writeImportElementPrefix(ImportElementPrefixImpl? prefix) {
+    if (prefix is DeferredImportElementPrefixImpl) {
       _sink.writeByte(ImportElementPrefixKind.isDeferred.index);
       _sink._writeStringReference(prefix.element.name);
-    } else if (prefix is ImportElementPrefix) {
+      _writeReference(prefix.element);
+    } else if (prefix is ImportElementPrefixImpl) {
       _sink.writeByte(ImportElementPrefixKind.isNotDeferred.index);
       _sink._writeStringReference(prefix.element.name);
+      _writeReference(prefix.element);
     } else {
       _sink.writeByte(ImportElementPrefixKind.isNull.index);
     }
@@ -502,7 +504,8 @@ class BundleWriter {
 
   void _writeLibraryImportPrefixFragment(PrefixFragmentImpl? fragment) {
     _sink.writeOptionalObject(fragment, (fragment) {
-      _sink._writeStringReference(fragment.name);
+      _writeFragmentName(fragment.name2);
+      _writeReference2(fragment.element.reference);
       _sink.writeBool(fragment.isDeferred);
     });
   }
@@ -524,6 +527,7 @@ class BundleWriter {
     _sink.writeUInt30(_resolutionSink.offset);
     _writeReference(element);
     _writeFragmentName(element.name2);
+    _sink._writeStringReference(element.name);
     MethodElementFlags.write(_sink, element);
 
     _resolutionSink._writeAnnotationList(element.metadata);
@@ -675,7 +679,10 @@ class BundleWriter {
 
   /// Write the reference of a non-local element.
   void _writeReference(ElementImpl element) {
-    var reference = element.reference;
+    _writeReference2(element.reference);
+  }
+
+  void _writeReference2(Reference? reference) {
     var index = _references._indexOfReference(reference);
     _sink.writeUInt30(index);
   }
@@ -706,6 +713,8 @@ class BundleWriter {
     _sink.writeUInt30(_resolutionSink.offset);
 
     _writeReference(element);
+    _writeFragmentName(element.name2);
+    _sink._writeStringReference(element.name);
     _sink.writeBool(element.isFunctionTypeAliasBased);
     TypeAliasElementFlags.write(_sink, element);
 
@@ -721,13 +730,14 @@ class BundleWriter {
     });
   }
 
-  void _writeTypeParameterElement(TypeParameterElement typeParameter) {
-    typeParameter as TypeParameterElementImpl;
-    _sink._writeStringReference(typeParameter.name);
-    _sink.writeByte(_encodeVariance(typeParameter).index);
-    _resolutionSink._writeAnnotationList(typeParameter.metadata);
-    _resolutionSink.writeType(typeParameter.bound);
-    _resolutionSink.writeType(typeParameter.defaultType);
+  void _writeTypeParameterElement(TypeParameterElement element) {
+    element as TypeParameterElementImpl;
+    _sink._writeStringReference(element.name);
+    _writeFragmentName(element.name2);
+    _sink.writeByte(_encodeVariance(element).index);
+    _resolutionSink._writeAnnotationList(element.metadata);
+    _resolutionSink.writeType(element.bound);
+    _resolutionSink.writeType(element.defaultType);
   }
 
   /// Add [typeParameters] to the indexing scope, so make them available

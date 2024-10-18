@@ -30,7 +30,7 @@ class ElementBuilder extends ThrowingAstVisitor<void> {
   var _partDirectiveIndex = 0;
 
   _EnclosingContext _enclosingContext;
-  var _nextUnnamedId = 0;
+  int _nextUnnamedId = 0;
 
   ElementBuilder({
     required LibraryBuilder libraryBuilder,
@@ -827,8 +827,10 @@ class ElementBuilder extends ThrowingAstVisitor<void> {
   void visitFunctionTypeAlias(covariant FunctionTypeAliasImpl node) {
     var nameToken = node.name;
     var name = nameToken.lexeme;
+    var fragmentName = _buildFragmentName(nameToken);
 
     var element = TypeAliasElementImpl(name, nameToken.offset);
+    element.name2 = fragmentName;
     element.isFunctionTypeAliasBased = true;
     element.metadata = _buildAnnotations(node.metadata);
     _setCodeRange(element, node);
@@ -837,7 +839,8 @@ class ElementBuilder extends ThrowingAstVisitor<void> {
     node.declaredElement = element;
     _linker.elementNodes[element] = node;
 
-    var reference = _enclosingContext.addTypeAlias(name, element);
+    var refName = fragmentName?.name ?? '${_nextUnnamedId++}';
+    var reference = _enclosingContext.addTypeAlias(refName, element);
     _libraryBuilder.declare(name, reference);
 
     var holder = _EnclosingContext(reference, element);
@@ -939,8 +942,10 @@ class ElementBuilder extends ThrowingAstVisitor<void> {
   void visitGenericTypeAlias(covariant GenericTypeAliasImpl node) {
     var nameToken = node.name;
     var name = nameToken.lexeme;
+    var fragmentName = _buildFragmentName(nameToken);
 
     var element = TypeAliasElementImpl(name, nameToken.offset);
+    element.name2 = fragmentName;
     element.isAugmentation = node.augmentKeyword != null;
     element.metadata = _buildAnnotations(node.metadata);
     _setCodeRange(element, node);
@@ -949,7 +954,8 @@ class ElementBuilder extends ThrowingAstVisitor<void> {
     node.declaredElement = element;
     _linker.elementNodes[element] = node;
 
-    var reference = _enclosingContext.addTypeAlias(name, element);
+    var refName = fragmentName?.name ?? '${_nextUnnamedId++}';
+    var reference = _enclosingContext.addTypeAlias(refName, element);
     if (!element.isAugmentation) {
       _libraryBuilder.declare(name, reference);
     }
@@ -1015,7 +1021,8 @@ class ElementBuilder extends ThrowingAstVisitor<void> {
       reference = _enclosingContext.addGetter(name, element);
       executableElement = element;
 
-      _buildSyntheticVariable(name: name, accessorElement: element);
+      var refName = fragmentName?.name ?? '${_nextUnnamedId++}';
+      _buildSyntheticVariable(name: refName, accessorElement: element);
     } else if (node.isSetter) {
       var element = PropertyAccessorElementImpl(name, nameOffset);
       element.name2 = fragmentName;
@@ -1024,16 +1031,20 @@ class ElementBuilder extends ThrowingAstVisitor<void> {
       element.isSetter = true;
       element.isStatic = node.isStatic;
 
-      reference = _enclosingContext.addSetter(name, element);
+      var refName = fragmentName?.name ?? '${_nextUnnamedId++}';
+      reference = _enclosingContext.addSetter(refName, element);
       executableElement = element;
 
       _buildSyntheticVariable(name: name, accessorElement: element);
     } else {
-      if (name == '-') {
+      var isUnaryMinus = false;
+      if (fragmentName?.name == '-') {
         var parameters = node.parameters;
-        if (parameters != null && parameters.parameters.isEmpty) {
-          name = 'unary-';
-        }
+        isUnaryMinus = parameters != null && parameters.parameters.isEmpty;
+      }
+
+      if (isUnaryMinus) {
+        name = 'unary-';
       }
 
       var element = MethodElementImpl(name, nameOffset);
@@ -1042,7 +1053,14 @@ class ElementBuilder extends ThrowingAstVisitor<void> {
       element.isAugmentation = node.augmentKeyword != null;
       element.isStatic = node.isStatic;
 
-      reference = _enclosingContext.addMethod(name, element);
+      String refName;
+      if (isUnaryMinus) {
+        refName = 'unary-';
+      } else {
+        refName = fragmentName?.name ?? '${_nextUnnamedId++}';
+      }
+
+      reference = _enclosingContext.addMethod(refName, element);
       executableElement = element;
     }
     executableElement.hasImplicitReturnType = node.returnType == null;
@@ -1341,8 +1359,10 @@ class ElementBuilder extends ThrowingAstVisitor<void> {
   void visitTypeParameter(covariant TypeParameterImpl node) {
     var nameToken = node.name;
     var name = nameToken.lexeme;
+    var fragmentName = _buildFragmentName(nameToken);
 
     var element = TypeParameterElementImpl(name, nameToken.offset);
+    element.name2 = fragmentName;
     element.metadata = _buildAnnotations(node.metadata);
     _setCodeRange(element, node);
 

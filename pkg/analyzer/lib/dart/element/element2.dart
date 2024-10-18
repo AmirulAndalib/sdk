@@ -51,6 +51,7 @@ import 'package:analyzer/dart/constant/value.dart';
 import 'package:analyzer/dart/element/element.dart'
     show
         DirectiveUri,
+        DirectiveUriWithUnit,
         ElementAnnotation,
         ElementKind,
         ElementLocation,
@@ -160,6 +161,11 @@ abstract class ClassElement2 implements InterfaceElement2 {
   /// as well. The interface modifier allows the class to be implemented, but
   /// not extended or mixed in.
   bool get isInterface;
+
+  /// Whether the class is a macro class.
+  ///
+  /// A class is a macro class if it has a `macro` modifer.
+  bool get isMacro;
 
   /// Whether the class is a mixin application.
   ///
@@ -441,7 +447,7 @@ abstract class Element2 {
   /// for which the [predicate] returns `true`.
   ///
   /// Returns `null` if there is no such element.
-  E? thisOrAncestorMatching2<E extends Element2>(
+  Element2? thisOrAncestorMatching2(
     bool Function(Element2) predicate,
   );
 
@@ -855,11 +861,6 @@ abstract class Fragment {
 
   /// The name of this fragment.
   ///
-  /// Returns `null` if this fragment doesn't have a name.
-  String? get name;
-
-  /// The name of this fragment.
-  ///
   /// Returns `null` if the fragment does not have a name, e.g. an unnamed
   /// [ExtensionFragment].
   ///
@@ -869,11 +870,6 @@ abstract class Fragment {
   /// Returns `null` if the fragment declaration node does not have the name
   /// specified, and the parser inserted a synthetic identifier.
   FragmentName? get name2;
-
-  /// The offset of the name in this fragment.
-  ///
-  /// Returns `null` if the fragment has no name.
-  int? get nameOffset;
 
   /// The next fragment in the augmentation chain.
   ///
@@ -916,7 +912,7 @@ abstract class FragmentName {
   String get name;
 
   /// The offset of the end of the name.
-  int? get nameEnd;
+  int get nameEnd;
 
   /// The offset of the name in the file.
   int get nameOffset;
@@ -989,7 +985,7 @@ abstract class GetterElement implements ExecutableElement2, FragmentedElement {
   GetterFragment? get firstFragment;
 
   @override
-  String get name;
+  String? get name;
 
   /// The field or top-level variable associated with this getter.
   ///
@@ -1010,9 +1006,6 @@ abstract class GetterFragment implements ExecutableFragment {
   //  but can't because the Impl class supports both getters and setters.
   // @override
   // GetterElement get element;
-
-  @override
-  String get name;
 
   /// The field or top-level variable associated with this getter.
   ///
@@ -1178,9 +1171,6 @@ abstract class InterfaceFragment implements InstanceFragment {
   ///
   /// [MixinFragment] cannot have mixins, so the empty list is returned.
   List<InterfaceType> get mixins;
-
-  @override
-  String get name;
 
   /// The superclass declared by this fragment.
   InterfaceType? get supertype;
@@ -1676,9 +1666,6 @@ abstract class MethodFragment implements ExecutableFragment {
   InstanceFragment? get enclosingFragment;
 
   @override
-  String get name;
-
-  @override
   MethodFragment? get nextFragment;
 
   @override
@@ -1775,7 +1762,7 @@ abstract class PrefixElement2 implements Element2, FragmentedElement {
   LibraryElement2 get library2;
 
   @override
-  String get name;
+  String? get name;
 
   /// The name lookup scope for this import prefix.
   ///
@@ -1799,9 +1786,6 @@ abstract class PrefixFragment implements Fragment {
   bool get isDeferred;
 
   @override
-  String get name;
-
-  @override
   PrefixFragment? get nextFragment;
 
   @override
@@ -1823,9 +1807,6 @@ abstract class PromotableElement2 implements VariableElement2 {
 abstract class PromotableFragment implements VariableFragment {
   @override
   PromotableElement2 get element;
-
-  @override
-  String get name;
 }
 
 /// A variable that has an associated getter and possibly a setter. Note that
@@ -1911,9 +1892,6 @@ abstract class PropertyInducingFragment
   bool get isSynthetic;
 
   @override
-  String get name;
-
-  @override
   PropertyInducingFragment? get nextFragment;
 
   @override
@@ -1950,7 +1928,7 @@ abstract class SetterElement implements ExecutableElement2, FragmentedElement {
   SetterFragment? get firstFragment;
 
   @override
-  String get name;
+  String? get name;
 
   /// The field or top-level variable associated with this setter.
   ///
@@ -1971,9 +1949,6 @@ abstract class SetterFragment implements ExecutableFragment {
   //  but can't because the Impl class supports both getters and setters.
   // @override
   // SetterElement get element;
-
-  @override
-  String get name;
 
   /// The field or top-level variable associated with this setter.
   ///
@@ -2125,9 +2100,6 @@ abstract class TypeAliasFragment
   LibraryFragment? get enclosingFragment;
 
   @override
-  String get name;
-
-  @override
   TypeAliasFragment? get nextFragment;
 
   @override
@@ -2188,9 +2160,6 @@ abstract class TypeParameterElement2 implements TypeDefiningElement2 {
 abstract class TypeParameterFragment implements TypeDefiningFragment {
   @override
   TypeParameterElement2 get element;
-
-  @override
-  String get name;
 
   @override
   TypeParameterFragment? get nextFragment;
@@ -2303,4 +2272,9 @@ abstract class VariableFragment implements Fragment {
   /// Variables that are declared with the 'const' modifier will return `false`
   /// even though they are implicitly final.
   bool get isFinal;
+}
+
+extension DirectiveUriWithUnitExtension on DirectiveUriWithUnit {
+  /// The library fragment associated with this directive.
+  LibraryFragment get libraryFragment => unit as LibraryFragment;
 }

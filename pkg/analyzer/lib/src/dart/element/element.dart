@@ -2441,8 +2441,10 @@ abstract class ElementImpl implements Element, Element2 {
   @override
   Element2? get enclosingElement2 {
     var candidate = _enclosingElement3;
-    if (candidate is CompilationUnitElementImpl ||
-        candidate is AugmentableElement) {
+    if (candidate is CompilationUnitElementImpl) {
+      throw UnsupportedError('Cannot get an enclosingElement2 for a fragment');
+    }
+    if (candidate is AugmentableElement) {
       throw UnsupportedError('Cannot get an enclosingElement2 for a fragment');
     }
     return candidate as Element2?;
@@ -3036,14 +3038,14 @@ abstract class ElementImpl implements Element, Element2 {
   }
 
   @override
-  E? thisOrAncestorMatching2<E extends Element2>(
+  Element2? thisOrAncestorMatching2(
     bool Function(Element2) predicate,
   ) {
     Element2? element = this;
     while (element != null && !predicate(element)) {
       element = element.enclosingElement2;
     }
-    return element as E?;
+    return element;
   }
 
   @override
@@ -3222,13 +3224,12 @@ abstract class ElementImpl2 implements Element2 {
   }
 
   @override
-  E? thisOrAncestorMatching2<E extends Element2>(
-      bool Function(Element2 p1) predicate) {
+  Element2? thisOrAncestorMatching2(bool Function(Element2 p1) predicate) {
     Element2? element = this;
     while (element != null && !predicate(element)) {
       element = element.enclosingElement2;
     }
-    return element as E?;
+    return element;
   }
 
   @override
@@ -4738,7 +4739,7 @@ class FragmentNameImpl implements FragmentName {
   });
 
   @override
-  int? get nameEnd => nameOffset + name.length;
+  int get nameEnd => nameOffset + name.length;
 }
 
 /// A concrete implementation of a [FunctionElement].
@@ -5028,7 +5029,7 @@ class GetterElementImpl extends ExecutableElementImpl2
   ElementKind get kind => ElementKind.GETTER;
 
   @override
-  String get name => firstFragment.name;
+  String? get name => firstFragment.name;
 
   @override
   PropertyInducingElement2? get variable3 => firstFragment.variable2?.element;
@@ -6840,6 +6841,9 @@ mixin MaybeAugmentedClassElementMixin on MaybeAugmentedInterfaceElementMixin
   bool get isInterface => declaration.isInterface;
 
   @override
+  bool get isMacro => declaration.isMacro;
+
+  @override
   bool get isMixinApplication => declaration.isMixinApplication;
 
   @override
@@ -6930,8 +6934,7 @@ mixin MaybeAugmentedExtensionTypeElementMixin
   ExtensionTypeElementImpl get firstFragment => declaration;
 
   @override
-  ConstructorElement2 get primaryConstructor2 =>
-      representation as ConstructorElement2;
+  ConstructorElement2 get primaryConstructor2 => primaryConstructor.element;
 
   @override
   FieldElement2 get representation2 => representation as FieldElement2;
@@ -7134,14 +7137,22 @@ mixin MaybeAugmentedInstanceElementMixin
   }
 
   @override
-  E? thisOrAncestorMatching2<E extends Element2>(
+  Element2? thisOrAncestorMatching2(
     bool Function(Element2) predicate,
-  ) =>
-      declaration.thisOrAncestorMatching2(predicate);
+  ) {
+    if (predicate(this)) {
+      return this;
+    }
+    return library2.thisOrAncestorMatching2(predicate);
+  }
 
   @override
-  E? thisOrAncestorOfType2<E extends Element2>() =>
-      declaration.thisOrAncestorOfType2<E>();
+  E? thisOrAncestorOfType2<E extends Element2>() {
+    if (this case E result) {
+      return result;
+    }
+    return library2.thisOrAncestorOfType2<E>();
+  }
 
   @override
   void visitChildren2<T>(ElementVisitor2<T> visitor) {
@@ -8335,7 +8346,7 @@ class MultiplyDefinedElementImpl implements MultiplyDefinedElement, Element2 {
   }
 
   @override
-  E? thisOrAncestorMatching2<E extends Element2>(
+  Element2? thisOrAncestorMatching2(
     bool Function(Element2 p1) predicate,
   ) {
     return null;
@@ -9006,7 +9017,7 @@ class PrefixElementImpl extends _ExistingElementImpl implements PrefixElement {
 
   PrefixElementImpl2 get element2 {
     return enclosingElement3.prefixes.firstWhere((element) {
-      return element.name == name;
+      return (element.name ?? '') == name;
     });
   }
 
@@ -9107,7 +9118,7 @@ class PrefixElementImpl2 extends ElementImpl2 implements PrefixElement2 {
   }
 
   @override
-  String get name => firstFragment.name;
+  String? get name => firstFragment.name2?.name;
 
   @override
   // TODO(scheglov): implement scope
@@ -9146,13 +9157,7 @@ class PrefixFragmentImpl implements PrefixFragment {
   final CompilationUnitElementImpl enclosingFragment;
 
   @override
-  final String name;
-
-  @override
-  int nameOffset;
-
-  @override
-  FragmentNameImpl name2;
+  FragmentNameImpl? name2;
 
   @override
   final bool isDeferred;
@@ -9168,8 +9173,6 @@ class PrefixFragmentImpl implements PrefixFragment {
 
   PrefixFragmentImpl({
     required this.enclosingFragment,
-    required this.name,
-    required this.nameOffset,
     required this.name2,
     required this.isDeferred,
   });
@@ -9730,7 +9733,13 @@ class SetterElementImpl extends ExecutableElementImpl2
       firstFragment.correspondingGetter2?.element as GetterElement?;
 
   @override
-  String get displayName => name.substring(0, name.length - 1);
+  String get displayName {
+    if (name case var name?) {
+      return name.substring(0, name.length - 1);
+    } else {
+      return '<null-name>';
+    }
+  }
 
   @override
   Element2? get enclosingElement2 => firstFragment.enclosingFragment?.element;
@@ -9742,7 +9751,7 @@ class SetterElementImpl extends ExecutableElementImpl2
   ElementKind get kind => ElementKind.SETTER;
 
   @override
-  String get name => firstFragment.name;
+  String? get name => firstFragment.name;
 
   @override
   PropertyInducingElement2? get variable3 => firstFragment.variable2?.element;
@@ -10040,6 +10049,9 @@ class TypeAliasElementImpl extends _ExistingElementImpl
         AugmentableElement<TypeAliasElementImpl>,
         MacroTargetElement
     implements TypeAliasElement, TypeAliasFragment {
+  @override
+  FragmentNameImpl? name2;
+
   /// Is `true` if the element has direct or indirect reference to itself
   /// from anywhere except a class element or type parameter bounds.
   bool hasSelfReference = false;
@@ -10178,21 +10190,6 @@ class TypeAliasElementImpl extends _ExistingElementImpl
   @override
   String get name {
     return super.name!;
-  }
-
-  @override
-  FragmentName? get name2 {
-    var name = this.name;
-
-    // If synthetic name.
-    if (name.isEmpty) {
-      return null;
-    }
-
-    return FragmentNameImpl(
-      name: name,
-      nameOffset: nameOffset,
-    );
   }
 
   @override
@@ -10384,6 +10381,9 @@ abstract class TypeDefiningElementImpl2 extends ElementImpl2
 /// A concrete implementation of a [TypeParameterElement].
 class TypeParameterElementImpl extends ElementImpl
     implements TypeParameterElement, TypeParameterFragment {
+  @override
+  FragmentNameImpl? name2;
+
   /// The default value of the type parameter. It is used to provide the
   /// corresponding missing type argument in type annotations and as the
   /// fall-back type value in type inference.
@@ -10479,21 +10479,6 @@ class TypeParameterElementImpl extends ElementImpl
   @override
   String get name {
     return super.name!;
-  }
-
-  @override
-  FragmentName? get name2 {
-    var name = this.name;
-
-    // If synthetic name.
-    if (name.isEmpty) {
-      return null;
-    }
-
-    return FragmentNameImpl(
-      name: name,
-      nameOffset: nameOffset,
-    );
   }
 
   @override
